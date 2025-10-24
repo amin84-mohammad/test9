@@ -1,0 +1,117 @@
+package com.example.mobileprogramming2
+
+import android.content.Intent
+import android.content.SharedPreferences
+import android.net.Uri
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var listView: ListView
+    private lateinit var editUrl: EditText
+    private lateinit var btnAdd: Button
+    private lateinit var sharedPref: SharedPreferences
+    private lateinit var urls: MutableList<String>
+    private lateinit var adapter: ArrayAdapter<String>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        
+        listView = findViewById(R.id.listView)
+        editUrl = findViewById(R.id.editUrl)
+        btnAdd = findViewById(R.id.btnAdd)
+
+        // SharedPreferences   
+        sharedPref = getSharedPreferences("MyURLs", MODE_PRIVATE)
+        urls = loadUrls()
+
+   
+        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, urls)
+        listView.adapter = adapter
+
+  
+        btnAdd.setOnClickListener {
+            val url = editUrl.text.toString().trim()
+            if (url.isNotEmpty()) {
+                urls.add(url)
+                saveUrls()
+                adapter.notifyDataSetChanged()
+                editUrl.text.clear()
+            } else {
+                Toast.makeText(this, " Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        
+        listView.setOnItemClickListener { _, _, position, _ ->
+            val link = urls[position]
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+            startActivity(intent)
+        }
+
+    
+        listView.setOnItemLongClickListener { _, _, position, _ ->
+            val u = urls[position]
+            AlertDialog.Builder(this)
+                .setTitle(":")
+                .setMessage(u)
+                .setPositiveButton("") { _, _ -> editUrlDialog(position) }
+                .setNegativeButton("") { _, _ ->
+                    urls.removeAt(position)
+                    saveUrls()
+                    adapter.notifyDataSetChanged()
+                }
+                .setNeutralButton("", null)
+                .show()
+            true
+        }
+    }
+
+    private fun editUrlDialog(index: Int) {
+        val input = EditText(this)
+        input.setText(urls[index])
+        AlertDialog.Builder(this)
+            .setTitle()
+            .setView(input)
+            .setPositiveButton() { _, _ ->
+                val newUrl = input.text.toString().trim()
+                if (newUrl.isNotEmpty()) {
+                    urls[index] = newUrl
+                    saveUrls()
+                    adapter.notifyDataSetChanged()
+                }
+            }
+            .setNegativeButton(,null)
+            .show()
+    }
+
+  SharedPreferences با Gson
+    private fun saveUrls() {
+        val json = Gson().toJson(urls)
+        sharedPref.edit().putString("urls_json", json).apply()
+    }
+
+     SharedPreferences
+    private fun loadUrls(): MutableList<String> {
+        val json = sharedPref.getString("urls_json", null)
+        return if (json != null) {
+            val type = object : TypeToken<MutableList<String>>() {}.type
+            Gson().fromJson(json, type)
+        } else {
+         
+            mutableListOf(
+                "https://www.google.com",
+                "https://www.bing.com",
+                "https://www.yahoo.com",
+                "https://duckduckgo.com"
+            )
+        }
+    }
+}
